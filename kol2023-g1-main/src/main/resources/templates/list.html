@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>WP Exam</title>
+</head>
+<body>
+
+<div>
+    <div>
+        <!-- PlayersController.showAdd -->
+        <a href="/players/add" class="add-item">
+            Add new player
+        </a>
+    </div>
+    <table>
+        <tr>
+            <th>Player name</th>
+            <th>Biography</th>
+            <th>Points Per Game</th>
+            <th>Position</th>
+            <th>Team</th>
+            <th>Votes for MVP</th>
+            <th>Actions</th>
+        </tr>
+        <!-- For each player you should have one <tr> like below -->
+        <tr class="item" th:each="player: ${players}">
+            <td th:text="${player.name}">[player.name]</td>
+            <td th:text="${player.bio}">[player.bio]</td>
+            <td th:text="${player.pointsPerGame}">[player.pointsPerGame]</td>
+            <td th:text="${player.position}">[player.position]</td>
+            <td th:text="${player.team}">[player.team]</td>
+            <td th:text="${player.votes}">[player.votes]</td>
+            <td>
+                <!-- PlayersController.delete -->
+                <form th:action="@{'/players/{id}/delete' (id=${player.id})}" th:method="POST">
+                    <button type="submit" class="delete-item">Delete</button>
+                </form>
+                <!-- PlayersController.showEdit -->
+                <a th:href="@{'/players/{id}/edit' (id=${player.id})}" class="edit-item">Edit</a>
+                <!-- PlayersController.vote -->
+                <form th:action="@{'/players/{id}/vote' (id=${player.id})}" th:method="POST">
+                    <button type="submit" class="like-item">Vote for Player</button>
+                </form>
+            </td>
+        </tr>
+    </table>
+
+</div>
+</body>
+</html>
