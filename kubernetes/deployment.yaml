@@ -1,0 +1,151 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: db-credentials
+  namespace: application
+type: Opaque
+data:
+  POSTGRES_USER: cG9zdGdyZXM=  # base64 encoded value of 'postgres'
+  POSTGRES_PASSWORD: YWRtaW4=   # base64 encoded value of 'admin'
+
+---
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: application
+data:
+  SPRING_DATASOURCE_URL: "jdbc:postgresql://db:5432/kiii"
+  SPRING_DATASOURCE_USERNAME: "postgres"
+  SPRING_DATASOURCE_PASSWORD: "admin"
+  SPRING_JPA_HIBERNATE_DDL_AUTO: "update"
+  SPRING_JPA_DATABASE_PLATFORM: "org.hibernate.dialect.PostgreSQLDialect"
+  POSTGRES_DB_NAME: "kiii"
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: db-d
+  namespace: application
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: db-d
+  template:
+    metadata:
+      labels:
+        app: db-d
+    spec:
+      containers:
+        - name: db-d
+          image: postgres
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: db-credentials
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-credentials
+                  key: POSTGRES_PASSWORD
+            - name: POSTGRES_DB
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: POSTGRES_DB_NAME
+          ports:
+            - containerPort: 5432
+          volumeMounts:
+            - name: db-data
+              mountPath: /var/lib/postgresql/data
+      volumes:
+        - name: db-data
+          emptyDir: {}
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app
+  namespace: application
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: app
+  template:
+    metadata:
+      labels:
+        app: app
+    spec:
+      containers:
+        - name: app
+          image: ivicar/kiii
+          ports:
+            - containerPort: 9999
+          env:
+            - name: SPRING_DATASOURCE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: SPRING_DATASOURCE_URL
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: db-credentials
+                  key: POSTGRES_USER
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-credentials
+                  key: POSTGRES_PASSWORD
+            - name: SPRING_JPA_HIBERNATE_DDL_AUTO
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: SPRING_JPA_HIBERNATE_DDL_AUTO
+            - name: SPRING_JPA_DATABASE_PLATFORM
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: SPRING_JPA_DATABASE_PLATFORM
+      imagePullSecrets:
+        - name: db-credentials
+
+---
+
+#apiVersion: v1
+#kind: Service
+#metadata:
+#  name: app
+#  namespace: application
+#spec:
+#  selector:
+#    app: app
+#  ports:
+#    - protocol: TCP
+#      port: 9999
+#      targetPort: 9999
+#      nodePort: 30080
+#  type: NodePort
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: db
+  namespace: application
+spec:
+  selector:
+    app: db-d
+#    app: db
+  ports:
+    - protocol: TCP
+      port: 5432
+      targetPort: 5432
