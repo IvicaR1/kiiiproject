@@ -121,21 +121,6 @@ spec:
 
 ---
 
-#apiVersion: v1
-#kind: Service
-#metadata:
-#  name: app
-#  namespace: application
-#spec:
-#  selector:
-#    app: app
-#  ports:
-#    - protocol: TCP
-#      port: 9999
-#      targetPort: 9999
-#      nodePort: 30080
-#  type: NodePort
-
 apiVersion: v1
 kind: Service
 metadata:
@@ -144,7 +129,6 @@ metadata:
 spec:
   selector:
     app: db-d
-#    app: db
   ports:
     - protocol: TCP
       port: 5432
